@@ -1,0 +1,87 @@
+/* src/index.css */
+/* PURPOSE: Global styles. Tailwind directives + custom resets and utilities. */
+/* CHANGE: Added new status badge classes for pending, picked_up, cancelled. */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    @apply bg-stone-50 text-stone-800 antialiased;
+  }
+  h1, h2, h3 { font-family: 'Playfair Display', serif; }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply bg-brand-600 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-xl
+           transition-all duration-200 shadow-sm hover:shadow-md active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply bg-white hover:bg-stone-50 text-stone-700 font-medium px-5 py-2.5 rounded-xl
+           border border-stone-200 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95;
+  }
+  .btn-danger {
+    @apply bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-xl
+           transition-all duration-200 active:scale-95;
+  }
+
+  /* Form */
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border border-stone-200 bg-white
+           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent
+           placeholder-stone-400 transition-all duration-200 text-stone-800;
+  }
+  .label {
+    @apply block text-sm font-medium text-stone-700 mb-1.5;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden
+           hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* ── Status Badges ─────────────────────────────────────────────────────── */
+  .badge-available {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-brand-100 text-brand-700;
+  }
+  /* pending = yellow/amber */
+  .badge-pending {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-yellow-100 text-yellow-700;
+  }
+  /* picked_up = blue */
+  .badge-picked-up {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-blue-100 text-blue-700;
+  }
+  /* cancelled = gray */
+  .badge-cancelled {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-stone-100 text-stone-500;
+  }
+  /* expired = red */
+  .badge-expired {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-red-100 text-red-600;
+  }
+  /* legacy — kept for any remaining usage */
+  .badge-claimed {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-blue-100 text-blue-700;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-600 to-warm-500 bg-clip-text text-transparent;
+  }
+}
