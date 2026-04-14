@@ -52,7 +52,7 @@ const markExpiredListings = async () => {
 
     const result = await Food.updateMany(
       {
-        status: "available",        // Only auto-expire still-available listings
+        status: "available",        
         expiryTime: { $lt: now },
       },
       {
