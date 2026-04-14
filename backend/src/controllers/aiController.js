@@ -24,22 +24,43 @@ const callAI = async (prompt) => {
 };
 
 // ── Gemini implementation ───────────────────────────────────────────────────
+// Thinking-only models (e.g. some gemini-2.5-pro builds) reject thinkingBudget: 0.
+// Use a generous maxOutputTokens so reasoning + visible text fit; aggregate all
+// non-thought parts in extractGeminiText.
+
+const geminiModel = () => process.env.GEMINI_MODEL || "gemini-2.5-pro";
+
+const geminiGenerationConfig = () => ({
+  temperature: 0.7,
+  maxOutputTokens: 4096,
+});
+
+const extractGeminiText = (data) => {
+  let out = "";
+  for (const candidate of data.candidates || []) {
+    for (const part of candidate.content?.parts || []) {
+      if (part.thought === true) continue;
+      if (typeof part.text === "string" && part.text.length) {
+        out += part.text;
+      }
+    }
+  }
+  return out.trim();
+};
+
 const callGemini = async (prompt) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set in .env");
 
-  // Use the REST API directly so we don't need a heavyweight SDK
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const model = geminiModel();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 300,
-      },
+      generationConfig: geminiGenerationConfig(),
     }),
   });
 
@@ -49,8 +70,12 @@ const callGemini = async (prompt) => {
   }
 
   const data = await res.json();
-  // Navigate Gemini's nested response structure
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+  const blockReason = data.promptFeedback?.blockReason;
+  if (blockReason) {
+    throw new Error(`Gemini blocked the request: ${blockReason}`);
+  }
+
+  return extractGeminiText(data);
 };
 
 // ── OpenAI implementation ───────────────────────────────────────────────────
@@ -94,22 +119,22 @@ const generateDescription = async (req, res, next) => {
       throw new Error("Please provide title, quantity, and category");
     }
 
-    const prompt = `You are helping a food donor write a listing for a food rescue app.
-Generate a short, clear, and warm food donation description (2-3 sentences, max 120 words).
+    const prompt = `You are an enthusiastic food donor writing an appealing listing for a community food rescue app.
+Generate a warm, descriptive, and appetizing food donation description (aim for 4 to 6 sentences).
 
-Details:
-- Food title: ${title}
-- Quantity: ${quantity}
-- Category: ${category}
+Details provided by the donor:
+Food title: ${title}
+Quantity: ${quantity}
+Category: ${category}
 
-The description should:
-- Mention the food type and quantity naturally
-- Note it is freshly prepared/packaged and ready for pickup
-- Sound friendly and encourage quick claiming
-- NOT include any markdown, bullet points, or special formatting
-- Be plain text only
+Instructions for the description:
+1.⁠ ⁠Be Descriptive: Use your culinary knowledge to expand on the "${title}". Add appealing, sensory details about its flavor, freshness, or comforting qualities, even if the title is very basic.
+2.⁠ ⁠Include Details: Mention the exact quantity (${quantity}) and category naturally in the flow of the text.
+3.⁠ ⁠Reassure the Receiver: Note that the food is safely packaged/prepared and in excellent condition for immediate pickup.
+4.⁠ ⁠Call to Action: Sound friendly and warmly encourage the community to claim it quickly.
+5.⁠ ⁠Formatting Constraints: Output STRICTLY as a single paragraph of plain text. Do NOT use any markdown, bullet points, asterisks, bold text, or special characters.
 
-Write only the description, nothing else.`;
+Write only the description paragraph, nothing else.`;
 
     const description = await callAI(prompt);
 
